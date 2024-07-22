@@ -3,7 +3,7 @@ let checkboxes = [];
 let messages = [];
 
 // Maximum number of elements allowed in the arrays
-const MAX_ELEMENTS = 90;
+const MAX_ELEMENTS = 150;
 
 // Function to add a checkbox to a chat message
 function addCheckboxToMessage(message) {
@@ -74,31 +74,6 @@ function grayOutChatMessage(message, gray) {
   }
 }
 
-// Select the chat container
-const chatContainer = document.querySelector(
-  "#items.style-scope.yt-live-chat-item-list-renderer"
-);
-
-// Add checkboxes to all existing chat messages
-for (let message of chatContainer.children) {
-  addCheckboxToMessage(message);
-}
-
-// Set up the MutationObserver to add checkboxes to new chat messages
-const observer = new MutationObserver((mutationsList) => {
-  for (let mutation of mutationsList) {
-    if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
-      for (let node of mutation.addedNodes) {
-        if (node.nodeType === Node.ELEMENT_NODE) {
-          addCheckboxToMessage(node);
-        }
-      }
-    }
-  }
-});
-
-observer.observe(chatContainer, { childList: true });
-
 // Function to add a heart-shaped like button to a chat message
 function addHeartButtonToMessage(message) {
   // Check if the message has a sub element with id="author-photo"
@@ -131,22 +106,51 @@ function addHeartButtonToMessage(message) {
   }
 }
 
-// Add heart-shaped like buttons to all existing chat messages
+// Refresh function to remove elements that no longer exist in the chat container
+function refreshElements() {
+  // Filter out checkboxes and messages that are no longer in the DOM
+  checkboxes = checkboxes.filter((checkbox, index) => {
+    if (document.contains(checkbox)) {
+      return true;
+    } else {
+      messages.splice(index, 1);
+      return false;
+    }
+  });
+
+  messages = messages.filter((message) => document.contains(message));
+}
+
+// Select the chat container
+const chatContainer = document.querySelector(
+  "#items.style-scope.yt-live-chat-item-list-renderer"
+);
+
+// Add checkboxes and like buttons to all existing chat messages
 for (let message of chatContainer.children) {
+  addCheckboxToMessage(message);
   addHeartButtonToMessage(message);
 }
 
-// Set up the MutationObserver to add heart-shaped like buttons to new chat messages
-const likeObserver = new MutationObserver((mutationsList) => {
+// Set up the MutationObserver to add checkboxes and like buttons to new chat messages
+const observer = new MutationObserver((mutationsList) => {
   for (let mutation of mutationsList) {
-    if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
-      for (let node of mutation.addedNodes) {
-        if (node.nodeType === Node.ELEMENT_NODE) {
-          addHeartButtonToMessage(node);
+    if (mutation.type === "childList") {
+      // Add checkboxes and like buttons to newly added nodes
+      if (mutation.addedNodes.length > 0) {
+        for (let node of mutation.addedNodes) {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            addCheckboxToMessage(node);
+            addHeartButtonToMessage(node);
+          }
         }
+      }
+      // Call refreshElements when nodes are removed
+      if (mutation.removedNodes.length > 0) {
+        refreshElements();
       }
     }
   }
 });
 
-likeObserver.observe(chatContainer, { childList: true });
+observer.observe(chatContainer, { childList: true });
